@@ -1,9 +1,8 @@
 <?php
 namespace App\Models;
 
-use App\Components\Traits\CarTrait;
-use App\Components\Traits\HelperTrait;
 use DateTime;
+use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Jenssegers\Mongodb\Eloquent\Model as Moloquent;
 
@@ -39,18 +38,17 @@ class Car extends Moloquent
      *
      * @param string|null $timeFrom
      * @param string|null $timeTo
-     * @return Collection
+     * @return Collection|
      */
     public function getSpots($timeFrom = null, $timeTo = null)
     {
-        $collection = new Collection();
         $imei = $this->tracker['imei'];
 
         if (!isset($imei)) {
-            return $collection;
+            return new Collection();
         }
 
-        $q = Spot::select('imei', 'loc')->where('imei', '=', $imei)->orderBy('time');
+        $q = Spot::select('loc')->where('imei', '=', $imei)->orderBy('time');
 
         if (isset($timeFrom)) {
             $q->where('time', '>=', new DateTime($timeFrom));
@@ -60,33 +58,25 @@ class Car extends Moloquent
             $q->where('time', '<=', new DateTime($timeTo));
         }
 
-        // Reset variables
-        $distance = 0;
-        $oldLat = null;
-        $oldLong = null;
-
-        $q->chunk(10000, function ($spots) use (&$distance, &$oldLat, &$oldLong) {
-
-            foreach ($spots as $spot) {
-                if (!isset($spot->loc) || !isset($spot->loc[0]) || !isset($spot->loc[1])) {
-                    continue;
+        /**
+         * #NOTE eloquent chunk method is working slower than taking all the filtered data from mongoDB. One request
+         * lasts ~200ms and it doesn't matter if we take 100 or 10 000 data rows, that's why we use simple Laravel
+         * eloquent lists() method.
+         */
+        try {
+            return $q->lists('loc');
+        } catch (Exception $e) {
+            /**
+             * On operation failed because of too many data to take from MongoDB (lack of RAM) We try to use different
+             * approach: chunk method, it's slower but works with data set exceeding allowed memory for MongoDB.
+             */
+            $arr = [];
+            $q->chunk(5000, function ($spots) use (&$arr) {
+                foreach ($spots as $spot) {
+                    $arr[] = $spot->loc;
                 }
-
-                $lat = $spot->loc[0];
-                $long = $spot->loc[1];
-
-                if (!isset($oldLat) || !isset($oldLong)) {
-                    $oldLat = $lat;
-                    $oldLong = $long;
-                    continue;
-                }
-                $distance += HelperTrait::calcDistanceBetweenCoordinates($oldLat, $oldLong, $spot->loc[0], $spot->loc[1]);
-//                $distance++;
-                $oldLat = $lat;
-                $oldLong = $long;
-            }
-        });
-dd($distance);
-        return $collection;
+            });
+            return $arr;
+        }
     }
 }

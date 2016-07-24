@@ -12,8 +12,12 @@
 */
 
 Route::get('/', function () {
-    return view('calcPresentation');
+    return view('calculators.carDistanceCalculator');
 });
+
+/**
+ * BEGIN AJAX
+ */
 
 Route::get('/getCars', [
     'as' => 'get_cars', 'uses' => 'CarsController@getCarsList'
@@ -22,3 +26,7 @@ Route::get('/getCars', [
 Route::post('/calcCarsTotalDistance/{dateFrom}/{dateTo}', [
     'as' => 'calc_cars_total_distance', 'uses' => 'CarsController@calcCarsTotalDistance'
 ]);
+
+/**
+ * END AJAX
+ */

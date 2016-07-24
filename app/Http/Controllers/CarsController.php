@@ -26,7 +26,8 @@ class CarsController extends Controller
     public function getCarsList()
     {
         try {
-            return CarBusiness::getCars(); //['865733025616350', '865733025595653']
+            $cars = CarBusiness::getCars();
+            return Response::json(['success' => true, 'data' => $cars]);
         } catch (Exception $e) {
             Log::error(ExException::generateMsg($e));
             return Response::json(['success' => false, 'msg' => ExException::UNSUCCESSFULL_REQUEST_MSG]);
