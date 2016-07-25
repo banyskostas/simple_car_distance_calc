@@ -3,8 +3,8 @@ namespace App\Models;
 
 use DateTime;
 use Exception;
-use Illuminate\Database\Eloquent\Collection;
 use Jenssegers\Mongodb\Eloquent\Model as Moloquent;
+use MongoDB;
 
 /**
  * Class Spot
@@ -34,18 +34,18 @@ class Car extends Moloquent
 
     /**
      * #Note simple hasMany relation is not possible because unique car number is IMEI and it's in array on attribute
-     * "tracker" and "tracker.imei" doesn't work as local_key on hasMany function
+     * "tracker" and "tracker.imei" doesn't work as local_key on hasMany method.
      *
      * @param string|null $timeFrom
      * @param string|null $timeTo
-     * @return Collection|
+     * @return array
      */
     public function getSpots($timeFrom = null, $timeTo = null)
     {
         $imei = $this->tracker['imei'];
 
         if (!isset($imei)) {
-            return new Collection();
+            return [];
         }
 
         $q = Spot::select('loc')->where('imei', '=', $imei)->orderBy('time');
@@ -67,7 +67,7 @@ class Car extends Moloquent
             return $q->lists('loc');
         } catch (Exception $e) {
             /**
-             * On operation failed because of too many data to take from MongoDB (lack of RAM) We try to use different
+             * On operation failed because of too many data to take from MongoDB (lack of RAM) at once we try to use different
              * approach: chunk method, it's slower but works with data set exceeding allowed memory for MongoDB.
              */
             $arr = [];

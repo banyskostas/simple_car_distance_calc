@@ -28,6 +28,7 @@ class CarsController extends Controller
         try {
             $cars = CarBusiness::getCars();
             return Response::json(['success' => true, 'data' => $cars]);
+
         } catch (Exception $e) {
             Log::error(ExException::generateMsg($e));
             return Response::json(['success' => false, 'msg' => ExException::UNSUCCESSFULL_REQUEST_MSG]);
@@ -44,6 +45,7 @@ class CarsController extends Controller
     public function calcCarsTotalDistance(Request $request, $dateFrom, $dateTo)
     {
         try {
+            // Validation
             $validator = Validator::make($request->all(), [
                 'cars' => 'required|json',
             ]);
@@ -60,6 +62,7 @@ class CarsController extends Controller
                 throw new ValidationException('DateTo is not a valid date');
             }
 
+            // Prepare data
             $cars = json_decode($request->input('cars'));
 
             $data = CarBusiness::calcCarsTotalDistance($cars, $dateFrom, $dateTo);

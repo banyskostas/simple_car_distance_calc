@@ -1,6 +1,7 @@
 var myModule = angular.module('carDistanceCalculatorController', []);
 
 myModule.controller('CarDistanceCalculatorController', ['ApiService', '$scope', 'HelperService', function (api, $scope, helper) {
+    // Predefine scope variables
     $scope.cars = {
         raw: [],
         multiSelect: {
@@ -9,42 +10,53 @@ myModule.controller('CarDistanceCalculatorController', ['ApiService', '$scope', 
             labelAll: 'All Cars',
             labelSelected: 'Selected Cars',
             helpMessage: ' Click cars to transfer them between fields.',
-            /* angular will use this to filter your lists */
+            /* List filter*/
             orderProperty: 'name',
-            /* this contains the initial list of all items (i.e. the left side) */
+            /* All items*/
             items: [],
-            /* this list should be initialized as empty or with any pre-selected items */
+            /* Pre-selected items */
             selectedItems: []
         }
     };
     $scope.selectedCars = [];
+    $scope.dateFromMoment = {};
+    $scope.dateToMoment = {};
+    $scope.dateFrom = '';
+    $scope.dateTo = '';
+    $scope.calculatedDestinationHtml = `Here you'll see the results...`;
+    $scope.loading = false;
+    $scope.requestType = true;
 
-    $scope.getCarsList = function (callback) {
+    /**
+     * First load handler
+     */
+    $scope.handleFirstLoad = () => {
+        $scope.getCarsList();
+    };
+
+    /**
+     * Get cars list through AJAX
+     */
+    $scope.getCarsList = function () {
         api.getCarsList(function (data) {
             $scope.cars.raw = data;
             console.log($scope.cars.raw);
-            $scope.$apply();
 
             setTimeout(function () {
-                //$scope.$broadcast('dashboard-data-updated');
                 $scope.generateCarsMultiSelectData();
                 $scope.$apply();
             }, 0);
-
-            if (typeof callback == 'function') {
-                callback(data);
-            }
         });
     };
 
-    $scope.handleFirstLoad = () => {
-        //$scope.showScreenLoader();
-
-        $scope.getCarsList(function () {
-            //$scope.hideScreenLoader();
-        });
-    };
-
+    /**
+     * Generate cars multi select data
+     * Formula:
+     * {
+     *  id: imei number,
+     *  name: generated name
+    *  }
+     */
     $scope.generateCarsMultiSelectData = () => {
         let data = [];
 
@@ -54,10 +66,100 @@ myModule.controller('CarDistanceCalculatorController', ['ApiService', '$scope', 
                 name: $scope.generateCarName(car)
             });
         });
-
         $scope.cars.multiSelect.items = data;
     };
 
+    /**
+     * Calculate selected cars distances and total distance
+     * There is a possibility to select request type
+     * 1. Calculate cars distances one by one using a separate request for each of them. (This helps to see that something is happening)
+     * 2. Calculate all cars distances at once using one request.
+     */
+    $scope.calcDistance = () => {
+
+        // Prevent several calculation requests if it's already started
+        if ($scope.loading) {
+            return false;
+        }
+
+        // Get data
+        let selectedCars = $scope.cars.multiSelect.selectedItems;
+        let dateFrom = $scope.dateFrom;
+        let dateTo = $scope.dateTo;
+
+        // Validate
+        let validation = $scope.validate(selectedCars, dateFrom, dateTo);
+
+        if (!validation.result) {
+            alert(validation.msg);
+            return false;
+        }
+        $scope.loading = true;
+
+        // Reset results
+        $scope.calculatedDestinationHtml = ``;
+
+        $scope.requestType ?
+            $scope.calcDestinationOneByOne(selectedCars, dateFrom, dateTo)
+            :
+            $scope.calcDestinationAllAtOnce(selectedCars, dateFrom, dateTo);
+    };
+
+    /**
+     * @param {array} selectedCars
+     * @param {string} dateFrom
+     * @param {string} dateTo
+     */
+    $scope.calcDestinationOneByOne = (selectedCars, dateFrom, dateTo) => {
+        // Predefine variables
+        let processed = 0;
+        let totalDistance = 0;
+
+        angular.forEach(selectedCars, (car) => {
+            if ($scope.loading) {
+                api.calcCarsTotalDistance([car.id], dateFrom, dateTo, (data) => {
+                    if (!data) {
+                        $scope.loading = false;
+                    }
+                    $scope.printCarDistanceData(car, data);
+                    totalDistance += data.cars[car.id].distance;
+                    processed++;
+
+                    if (selectedCars.length == processed) {
+                        $scope.printTotalDistance(data.totalDistance);
+                        $scope.loading = false;
+                    }
+                });
+            }
+        });
+    };
+
+    /**
+     * @param {array} selectedCars
+     * @param {string} dateFrom
+     * @param {string} dateTo
+     */
+    $scope.calcDestinationAllAtOnce = (selectedCars, dateFrom, dateTo) => {
+        // Predefine variables
+        let cars = [];
+
+        angular.forEach(selectedCars, (car) => {
+            cars.push(car.id);
+        });
+
+        api.calcCarsTotalDistance(cars, dateFrom, dateTo, (data) => {
+            angular.forEach(selectedCars, (car) => {
+                $scope.printCarDistanceData(car, data);
+            });
+            $scope.printTotalDistance(data.totalDistance);
+            $scope.loading = false;
+        });
+    };
+
+    /**
+     * @param {Object} car
+     * @returns {string}
+     */
     $scope.generateCarName = (car) => {
         let str = ``;
 
@@ -72,35 +174,69 @@ myModule.controller('CarDistanceCalculatorController', ['ApiService', '$scope', 
         if (car.plate_nr) {
             str += `(${car.plate_nr})`;
         }
-
         return str;
     };
 
-    $scope.calcDestination = () => {
-        // Predefine variables
-        let cars = [];
+    /**
+     * @param {array} selectedCars
+     * @param {string} dateFrom
+     * @param {string} dateTo
+     * @returns {{result: boolean, msg: string}}
+     */
+    $scope.validate = (selectedCars, dateFrom, dateTo) => {
+        let msg = '';
 
-        let selectedCars = $scope.cars.multiSelect.selectedItems;
-        let dateFrom = '2015-01-01 00:00:00';
-        let dateTo = '2015-12-31 00:00:00';
+        if (selectedCars.length <= 0) {
+            msg = `Please select at least one car`;
+        }
 
-        angular.forEach(selectedCars, (car) => {
-            cars.push(car.id);
-        });
+        if (msg == '' && dateFrom == '') {
+            msg = `Please select date from`;
+        }
 
-        api.calcCarsTotalDistance(cars, dateFrom, dateTo, (data) => {
-            //$scope.cars.raw = data;
-            console.log(data);
-            $scope.$apply();
+        if (msg == '' && dateTo == '') {
+            msg = `Please select date to`;
+        }
 
-            setTimeout(function () {
-                $scope.$apply();
-            }, 0);
+        return {
+            result: msg == '',
+            msg: msg
+        };
+    };
 
-            if (typeof callback == 'function') {
-                callback(data);
-            }
-        });
+    /**
+     * @param {Object} car
+     * @param {array} data
+     * @returns {boolean}
+     */
+    $scope.printCarDistanceData = (car, data) => {
+        if (typeof data.cars[car.id] == 'undefined') {
+            return false;
+        }
+
+        let carData = data.cars[car.id];
+        $scope.calculatedDestinationHtml += `${car.name} \n`;
+        $scope.calculatedDestinationHtml += `Distance: ${carData.distance} Km \n`;
+        $scope.calculatedDestinationHtml += `Accuracy: ${carData.distance_calc_accuracy_percentage} % \n`;
+        $scope.calculatedDestinationHtml += `Failed spots: ${carData.failed_spots} \n`;
+        $scope.calculatedDestinationHtml += `Processed spots: ${carData.processed_spots} \n`;
+        $scope.calculatedDestinationHtml += `--------------------------------------------------------\n`;
+    };
+
+    /**
+     * @param {float} totalDistance
+     */
+    $scope.printTotalDistance = (totalDistance) => {
+        $scope.calculatedDestinationHtml += `Total distance: ${totalDistance} Km`;
+    };
+
+    /**
+     * Change date format to desired
+     */
+    $scope.regenerateDates = () => {
+        var formatDate = "YYYY-MM-DD HH:mm:ss";
+        $scope.dateFrom = moment($scope.dateFromMoment).format(formatDate);
+        $scope.dateTo = moment($scope.dateToMoment).format(formatDate);
     };
 
     $scope.handleFirstLoad();

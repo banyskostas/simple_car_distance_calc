@@ -8,10 +8,12 @@
     <body>
         <div class="container">
             <div class="header">
-                <h2>@yield('title')</h2>
+                <h1>@yield('title')</h1>
             </div>
             <div class="content">
-                @yield('content')
+                <div class="inner-content">
+                    @yield('content')
+                </div>
             </div>
         </div>
 

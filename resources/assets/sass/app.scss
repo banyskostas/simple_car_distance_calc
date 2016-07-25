@@ -1,15 +1,26 @@
+$mainColor: #fff;
+
 body {
   background-image: url("/assets/images/night-city-street.jpg");
   background-position: 50% 0;
+  background-repeat: no-repeat;
+  background-color: #000 !important;
 
   .container {
     .header {
+      padding: 25px 0;
 
+      h1 {
+        color: $mainColor;
+        text-align: center;
+      }
     }
 
     .content {
-
-
+      .inner-content {
+        background-color: $mainColor;
+        padding: 0 15px 15px 15px;
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 var myModule = angular.module('apiService', []);
 
-myModule.service('ApiService', function () {
+myModule.service('ApiService', ['$http', function ($http) {
 
         /**
          * Class ApiService
@@ -11,10 +11,8 @@ myModule.service('ApiService', function () {
              * @returns null|Object
              */
             getCarsList(callback) {
-                $.ajax({
-                    dataType: "json",
-                    url: this.getLocation() + `getCars`,
-                    success: (response) => {
+                $http.get(this.getLocation() + `getCars`)
+                    .success( (response) => {
                         if (response.success) {
                             if (typeof callback == "function") {
                                 return callback(response.data);
@@ -22,24 +20,25 @@ myModule.service('ApiService', function () {
                             return response.data;
                         } else {
                             alert(response.msg);
+
+                            if (typeof callback == "function") {
+                                return callback(false);
+                            }
                         }
-                        return null;
-                    }
-                });
+                        return false;
+                    });
             }
 
             /**
              * @returns null|Object
              */
             calcCarsTotalDistance(cars, dateFrom, dateTo, callback) {
-                $.ajax({
-                    method: 'POST',
-                    dataType: "json",
-                    url: this.getLocation() + `calcCarsTotalDistance/${dateFrom}/${dateTo}`,
-                    data: {
+                $http.post(
+                    this.getLocation() + `calcCarsTotalDistance/${dateFrom}/${dateTo}`,
+                    {
                         'cars': JSON.stringify(cars)
-                    },
-                    success: (response) => {
+                    })
+                    .success((response) => {
                         if (response.success) {
                             if (typeof callback == "function") {
                                 return callback(response.data);
@@ -47,10 +46,13 @@ myModule.service('ApiService', function () {
                             return response.data;
                         } else {
                             alert(response.msg);
+
+                            if (typeof callback == "function") {
+                                return callback(false);
+                            }
                         }
-                        return null;
-                    }
-                });
+                        return false;
+                    });
             }
 
             /**
@@ -64,4 +66,4 @@ myModule.service('ApiService', function () {
             }
         }
         return new ApiService;
-    });
+    }]);

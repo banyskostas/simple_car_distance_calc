@@ -3,6 +3,7 @@
  */
 angular.module('mainApp.services', [
     'dualmultiselect',
+    'ui.bootstrap.datetimepicker',
     'apiService',
     'helperService',
 ]);
@@ -20,13 +21,5 @@ angular.module('mainApp.controllers', [
 angular.module('mainApp', [
     'mainApp.services',
     'mainApp.controllers',
-])
-.run(function() {
-    //...
-
-})
-.config(function() {
-    //...
-});
-
+]);
 

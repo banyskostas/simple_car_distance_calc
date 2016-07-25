@@ -120,7 +120,6 @@ class CarBusiness
                 'distance_calc_accuracy_percentage' => self::calcAccuracy($totalSpots, $failedSpots),
                 'distance' => $distance
             ];
-
             $arr['totalDistance'] += $distance;
         }
         return $arr;
