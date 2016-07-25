@@ -17,8 +17,8 @@ body {
   #carDistanceCalculator .calculate i {
     line-height: 46px;
     padding: 0 15px; }
-  #carDistanceCalculator .calculate .checkbox {
-    padding: 0 15px; }
+  #carDistanceCalculator .calculate button {
+    margin-left: 15px; }
 
 /* Include this file in your html if you are using the CSP mode. */
 [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak],

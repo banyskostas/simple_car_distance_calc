@@ -91,12 +91,12 @@
             <button class="btn btn-lg btn-primary pull-right" ng-class="loading ? 'disabled' : ''" ng-click="calcDistance()" ngDisabled="loading">
                 Calculate
             </button>
-            <i ng-show="loading" class="fa fa-spin fa-spinner pull-right"></i>
             <div class="checkbox pull-right">
                 <label>
                   <input type="checkbox" ng-model="requestType" /> Request one by one
                 </label>
-              </div>
+            </div>
+            <i ng-show="loading" class="fa fa-spin fa-spinner pull-right"></i>
         </div>
     </div>
     <!-- END CALCULATE -->
