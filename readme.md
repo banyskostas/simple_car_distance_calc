@@ -18,5 +18,5 @@ App that allows you to select cars and calculate the distance they have driven i
 In order to calculate the distance you need to select a car or several cars you want then select the date range and click "Calculate".
 
 ## Demo example
-![demo calculator](/examples/images/calculator.jpg)
-![demo results](/examples/images/results.jpg)
+![demo calculator](public/examples/images/calculator.jpg)
+![demo results](public/examples/images/results.jpg)
