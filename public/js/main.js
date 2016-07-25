@@ -50711,7 +50711,7 @@ myModule.controller('CarDistanceCalculatorController', ['ApiService', '$scope', 
                     processed++;
 
                     if (selectedCars.length == processed) {
-                        $scope.printTotalDistance(data.totalDistance);
+                        $scope.printTotalDistance(totalDistance);
                         $scope.loading = false;
                     }
                 });
